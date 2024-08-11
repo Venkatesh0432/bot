@@ -1,19 +1,25 @@
+import os
 from telegram import Update, Bot
 from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, Filters
 import sqlite3
 import schedule
 import time
 from datetime import datetime
+import logging
+
+# Configure logging
+logging.basicConfig(filename='bot.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Initialize the bot
-TOKEN = '6639976850:AAGFEmV6O4jqJ7uIhwHDCj33W0Me2X2OZV0'
-GROUP_CHAT_ID = '-1002249122120'
+TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+GROUP_CHAT_ID = os.getenv('GROUP_CHAT_ID')
 updater = Updater(token=TOKEN, use_context=True)
 dispatcher = updater.dispatcher
 bot = Bot(token=TOKEN)
 
 # Connect to SQLite database
-conn = sqlite3.connect('visa_data.db', check_same_thread=False)
+db_path = os.getenv('DATABASE_PATH', 'visa_data.db')
+conn = sqlite3.connect(db_path, check_same_thread=False)
 cursor = conn.cursor()
 
 # Create tables if not exist
@@ -129,31 +135,37 @@ def handle_message(update: Update, context: CallbackContext):
             conn.commit()
 
 def daily_summary():
-    message = "Daily Visa Analysis:\n\n"
-    
-    cursor.execute('SELECT consulate, status, COUNT(*) FROM visa_data WHERE DATE(timestamp) = DATE("now") GROUP BY consulate, status')
-    rows = cursor.fetchall()
-    
-    for row in rows:
-        consulate, status, count = row
-        message += f"{consulate} - {status}: {count}\n"
-    
-    bot.send_message(chat_id=GROUP_CHAT_ID, text=message)
+    try:
+        message = "Daily Visa Analysis:\n\n"
+        
+        cursor.execute('SELECT consulate, status, COUNT(*) FROM visa_data WHERE DATE(timestamp) = DATE("now") GROUP BY consulate, status')
+        rows = cursor.fetchall()
+        
+        for row in rows:
+            consulate, status, count = row
+            message += f"{consulate} - {status}: {count}\n"
+        
+        bot.send_message(chat_id=GROUP_CHAT_ID, text=message)
+    except Exception as e:
+        logging.error(f"Error in daily_summary: {e}")
 
 def daily_question_summary():
-    message = "Daily Question Summary:\n\n"
-    
-    for consulate in ['Mumbai', 'Hyderabad', 'Chennai', 'Delhi', 'Kolkata']:
-        message += f"Questions for {consulate} consulate:\n"
-        cursor.execute('SELECT question FROM questions WHERE consulate = ? AND DATE(timestamp) = DATE("now")', (consulate,))
-        rows = cursor.fetchall()
-        if rows:
-            for row in rows:
-                message += f"- {row[0]}\n"
-        else:
-            message += "No questions asked today.\n"
-    
-    bot.send_message(chat_id=GROUP_CHAT_ID, text=message)
+    try:
+        message = "Daily Question Summary:\n\n"
+        
+        for consulate in ['Mumbai', 'Hyderabad', 'Chennai', 'Delhi', 'Kolkata']:
+            message += f"Questions for {consulate} consulate:\n"
+            cursor.execute('SELECT question FROM questions WHERE consulate = ? AND DATE(timestamp) = DATE("now")', (consulate,))
+            rows = cursor.fetchall()
+            if rows:
+                for row in rows:
+                    message += f"- {row[0]}\n"
+            else:
+                message += "No questions asked today.\n"
+        
+        bot.send_message(chat_id=GROUP_CHAT_ID, text=message)
+    except Exception as e:
+        logging.error(f"Error in daily_question_summary: {e}")
 
 # Set up command handlers
 dispatcher.add_handler(CommandHandler('start', start))
