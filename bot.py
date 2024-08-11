@@ -4,7 +4,7 @@ import sqlite3
 import time
 from datetime import datetime
 from telegram import Update, Bot
-from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, filters
+from telegram.ext import Application, CommandHandler, CallbackContext, MessageHandler, filters
 import schedule
 
 # Configure logging
@@ -13,8 +13,7 @@ logging.basicConfig(filename='bot.log', level=logging.INFO, format='%(asctime)s 
 # Initialize the bot
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 GROUP_CHAT_ID = os.getenv('GROUP_CHAT_ID')
-updater = Updater(token=TOKEN, use_context=True)
-dispatcher = updater.dispatcher
+application = Application.builder().token(TOKEN).build()
 bot = Bot(token=TOKEN)
 
 # Connect to SQLite database
@@ -40,11 +39,11 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS questions (
 )''')
 
 # Command Handlers
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text("Welcome! Use /help to see available commands.")
+async def start(update: Update, context: CallbackContext):
+    await update.message.reply_text("Welcome! Use /help to see available commands.")
 
-def help_command(update: Update, context: CallbackContext):
-    update.message.reply_text(
+async def help_command(update: Update, context: CallbackContext):
+    await update.message.reply_text(
         "/start - Start the bot\n"
         "/help - Show help\n"
         "/report - Show latest monthly report\n"
@@ -53,12 +52,12 @@ def help_command(update: Update, context: CallbackContext):
         "/history [month/year] - Show past reports"
     )
 
-def ask_question(update: Update, context: CallbackContext):
+async def ask_question(update: Update, context: CallbackContext):
     question = ' '.join(context.args)
     user_id = update.message.from_user.id
     
     if not question:
-        update.message.reply_text("Please provide a question.")
+        await update.message.reply_text("Please provide a question.")
         return
 
     consulate = 'Unknown'
@@ -73,11 +72,11 @@ def ask_question(update: Update, context: CallbackContext):
     if cursor.fetchone()[0] == 0:
         cursor.execute('INSERT INTO questions (user_id, question, consulate) VALUES (?, ?, ?)', (user_id, question, consulate))
         conn.commit()
-        update.message.reply_text("Question logged.")
+        await update.message.reply_text("Question logged.")
     else:
-        update.message.reply_text("You have already asked a question this month.")
+        await update.message.reply_text("You have already asked a question this month.")
 
-def report(update: Update, context: CallbackContext):
+async def report(update: Update, context: CallbackContext):
     current_month = datetime.now().strftime('%Y-%m')
     message = f"Monthly Report for {current_month}:\n\n"
     
@@ -99,15 +98,15 @@ def report(update: Update, context: CallbackContext):
         else:
             message += "No questions asked this month.\n"
     
-    update.message.reply_text(message)
+    await update.message.reply_text(message)
 
-def stats(update: Update, context: CallbackContext):
-    update.message.reply_text("This feature is under development.")
+async def stats(update: Update, context: CallbackContext):
+    await update.message.reply_text("This feature is under development.")
 
-def history(update: Update, context: CallbackContext):
-    update.message.reply_text("This feature is under development.")
+async def history(update: Update, context: CallbackContext):
+    await update.message.reply_text("This feature is under development.")
 
-def handle_message(update: Update, context: CallbackContext):
+async def handle_message(update: Update, context: CallbackContext):
     text = update.message.text.lower()
     status = 'Unknown'
     consulate = 'Unknown'
@@ -134,7 +133,7 @@ def handle_message(update: Update, context: CallbackContext):
             cursor.execute('INSERT INTO visa_data (user_id, status, consulate) VALUES (?, ?, ?)', (user_id, status, consulate))
             conn.commit()
 
-def daily_summary():
+async def daily_summary():
     try:
         message = "Daily Visa Analysis:\n\n"
         
@@ -145,11 +144,11 @@ def daily_summary():
             consulate, status, count = row
             message += f"{consulate} - {status}: {count}\n"
         
-        bot.send_message(chat_id=GROUP_CHAT_ID, text=message)
+        await bot.send_message(chat_id=GROUP_CHAT_ID, text=message)
     except Exception as e:
         logging.error(f"Error in daily_summary: {e}")
 
-def daily_question_summary():
+async def daily_question_summary():
     try:
         message = "Daily Question Summary:\n\n"
         
@@ -163,29 +162,30 @@ def daily_question_summary():
             else:
                 message += "No questions asked today.\n"
         
-        bot.send_message(chat_id=GROUP_CHAT_ID, text=message)
+        await bot.send_message(chat_id=GROUP_CHAT_ID, text=message)
     except Exception as e:
         logging.error(f"Error in daily_question_summary: {e}")
 
 # Set up command handlers
-dispatcher.add_handler(CommandHandler('start', start))
-dispatcher.add_handler(CommandHandler('help', help_command))
-dispatcher.add_handler(CommandHandler('ask', ask_question))
-dispatcher.add_handler(CommandHandler('report', report))
-dispatcher.add_handler(CommandHandler('stats', stats))
-dispatcher.add_handler(CommandHandler('history', history))
-dispatcher.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+application.add_handler(CommandHandler('start', start))
+application.add_handler(CommandHandler('help', help_command))
+application.add_handler(CommandHandler('ask', ask_question))
+application.add_handler(CommandHandler('report', report))
+application.add_handler(CommandHandler('stats', stats))
+application.add_handler(CommandHandler('history', history))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 # Schedule daily summaries
-schedule.every().day.at("13:00").do(daily_summary)  # 1:00 PM UTC
-schedule.every().day.at("13:30").do(daily_question_summary)  # 1:30 PM UTC
+schedule.every().day.at("13:00").do(lambda: asyncio.run(daily_summary()))  # 1:00 PM UTC
+schedule.every().day.at("13:30").do(lambda: asyncio.run(daily_question_summary()))  # 1:30 PM UTC
 
 # Start the bot
-def run_bot():
-    updater.start_polling()
+async def run_bot():
+    await application.start()
     while True:
         schedule.run_pending()
-        time.sleep(1)
+        await asyncio.sleep(1)
 
 if __name__ == '__main__':
-    run_bot()
+    import asyncio
+    asyncio.run(run_bot())
