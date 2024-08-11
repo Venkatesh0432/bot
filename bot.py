@@ -1,11 +1,11 @@
 import os
-from telegram import Update, Bot
-from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, filters
+import logging
 import sqlite3
-import schedule
 import time
 from datetime import datetime
-import logging
+from telegram import Update, Bot
+from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, filters
+import schedule
 
 # Configure logging
 logging.basicConfig(filename='bot.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -177,8 +177,8 @@ dispatcher.add_handler(CommandHandler('history', history))
 dispatcher.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 # Schedule daily summaries
-schedule.every().day.at("13:00").do(daily_summary)  # 6:30 PM IST is 13:00 UTC
-schedule.every().day.at("13:30").do(daily_question_summary)  # 7:00 PM IST is 13:30 UTC
+schedule.every().day.at("13:00").do(daily_summary)  # 1:00 PM UTC
+schedule.every().day.at("13:30").do(daily_question_summary)  # 1:30 PM UTC
 
 # Start the bot
 def run_bot():
