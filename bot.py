@@ -1,6 +1,6 @@
 import os
 from telegram import Update, Bot
-from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, filters
 import sqlite3
 import schedule
 import time
@@ -174,7 +174,7 @@ dispatcher.add_handler(CommandHandler('ask', ask_question))
 dispatcher.add_handler(CommandHandler('report', report))
 dispatcher.add_handler(CommandHandler('stats', stats))
 dispatcher.add_handler(CommandHandler('history', history))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+dispatcher.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 # Schedule daily summaries
 schedule.every().day.at("13:00").do(daily_summary)  # 6:30 PM IST is 13:00 UTC
