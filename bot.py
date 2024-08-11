@@ -1,23 +1,24 @@
-import os
 import logging
 import sqlite3
-import time
+import asyncio
+import schedule
 from datetime import datetime
 from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, CallbackContext, MessageHandler, filters
-import schedule
 
 # Configure logging
 logging.basicConfig(filename='bot.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# Bot credentials
+TOKEN = "6639976850:AAGFEmV6O4jqJ7uIhwHDCj33W0Me2X2OZV0"
+GROUP_CHAT_ID = "-1002249122120"
+
 # Initialize the bot
-TOKEN = os.getenv('6639976850:AAGFEmV6O4jqJ7uIhwHDCj33W0Me2X2OZV0')
-GROUP_CHAT_ID = os.getenv('-1002249122120')
 application = Application.builder().token(TOKEN).build()
 bot = Bot(token=TOKEN)
 
 # Connect to SQLite database
-db_path = os.getenv('DATABASE_PATH', 'visa_data.db')
+db_path = 'visa_data.db'
 conn = sqlite3.connect(db_path, check_same_thread=False)
 cursor = conn.cursor()
 
@@ -187,5 +188,4 @@ async def run_bot():
         await asyncio.sleep(1)
 
 if __name__ == '__main__':
-    import asyncio
     asyncio.run(run_bot())
