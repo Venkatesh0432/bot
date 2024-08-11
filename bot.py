@@ -1,6 +1,5 @@
 from telegram import Update, Bot
 from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, Filters
-from telegram.ext import Filters
 import sqlite3
 import schedule
 import time
@@ -130,7 +129,6 @@ def handle_message(update: Update, context: CallbackContext):
             conn.commit()
 
 def daily_summary():
-    now = datetime.now()
     message = "Daily Visa Analysis:\n\n"
     
     cursor.execute('SELECT consulate, status, COUNT(*) FROM visa_data WHERE DATE(timestamp) = DATE("now") GROUP BY consulate, status')
@@ -143,7 +141,6 @@ def daily_summary():
     bot.send_message(chat_id=GROUP_CHAT_ID, text=message)
 
 def daily_question_summary():
-    now = datetime.now()
     message = "Daily Question Summary:\n\n"
     
     for consulate in ['Mumbai', 'Hyderabad', 'Chennai', 'Delhi', 'Kolkata']:
@@ -169,7 +166,7 @@ dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_me
 
 # Schedule daily summaries
 schedule.every().day.at("13:00").do(daily_summary)  # 6:30 PM IST is 13:00 UTC
-schedule.every().day.at("13:00").do(daily_question_summary)  # 6:30 PM IST is 13:00 UTC
+schedule.every().day.at("13:30").do(daily_question_summary)  # 7:00 PM IST is 13:30 UTC
 
 # Start the bot
 def run_bot():
@@ -180,8 +177,3 @@ def run_bot():
 
 if __name__ == '__main__':
     run_bot()
-
-
-
-
-
