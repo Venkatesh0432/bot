@@ -11,8 +11,8 @@ import schedule
 logging.basicConfig(filename='bot.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Initialize the bot
-TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-GROUP_CHAT_ID = os.getenv('GROUP_CHAT_ID')
+TOKEN = os.getenv('6639976850:AAGFEmV6O4jqJ7uIhwHDCj33W0Me2X2OZV0')
+GROUP_CHAT_ID = os.getenv('-1002249122120')
 application = Application.builder().token(TOKEN).build()
 bot = Bot(token=TOKEN)
 
