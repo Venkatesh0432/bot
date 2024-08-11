@@ -6,8 +6,7 @@ import time
 from datetime import datetime
 
 # Initialize the bot
-TOKEN = '6639976850:AAGFEmV6O4jqJ7uIhwHDCj33W0Me2X2OZV0
-'
+TOKEN = '6639976850:AAGFEmV6O4jqJ7uIhwHDCj33W0Me2X2OZV0'
 GROUP_CHAT_ID = '-1002249122120'
 updater = Updater(token=TOKEN, use_context=True)
 dispatcher = updater.dispatcher
